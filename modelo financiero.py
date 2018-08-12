@@ -85,6 +85,55 @@ def Mcov(M):
 # In[ ]:
 
 
+from scipy.optimize import minimize
+
+#valores iniciales
+r = 0
+w0=np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+
+def miniz(M,Pc):
+    w=np.zeros(M.shape[0])
+    for i in range(w.size):
+        for j in range(w.size):
+            S=(1/2)*sum(sum(M[i][j]*w[i]*w[j]))
+    return S
+
+def constraint1(Pc,r):
+    U=np.ones(Pc.shape[0])
+    w=np.zeros(Pc.shape[0])
+    sum_= r
+    for i in range(w.size):
+        sum_=sum_ - Av[i]*w[i]        
+    return sum_
+
+def constraint2(Pc):
+    w=np.zeros(Pc.shape[0])
+    Sum_= 1
+    for i in range(w.size):
+        Sum_= Sum_ - w[i]        
+    return Sum_
+
+def constraint3(Pc):
+    w=np.zeros(Pc.shape[0])    
+    for i in range(w.size):
+        w[i]>=0        
+    return w
+
+# Optimización
+b = (0,1)
+bnds = (b, b, b, b, b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b)
+con1 = {'type': 'eq', 'fun': constraint1} 
+con2 = {'type': 'eq', 'fun': constraint2}
+con3 = {'type': 'ineq', 'fun': constraint3} 
+cons = ([con1,con2,con3])
+solution = minimize(miniz,w0,method='SLSQP',\
+                    bounds=bnds,constraints=cons)
+x = solution.x
+
+
+# In[ ]:
+
+
 #Simulación del cálculo de los pesos con el módelo clásico de Markowitz
 
 def  wM(rf,Pc):
