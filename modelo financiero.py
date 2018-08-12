@@ -46,7 +46,26 @@ def LecYSel(path):
 # In[ ]:
 
 
-#Cálculo promedio, desviación estándar, matriz de covarianzas de los precios de cierre de cada acción
+#Cálculo precios relativos
+
+def retorn(M):
+    M=np.transpose(M)
+    vt=np.zeros((M.shape[0], M.shape[1]))
+            
+    for i in range(M.shape[1]):
+        for j in range(M.shape[0]):
+            vt[j][i] = M[j-1][i] /M[j][i] #Cálculo de vt (según artículo guía)
+    
+    Vt=np.transpose(np.delete(vt,0,0))
+    onesColumn = np.ones((1,Vt.shape[1]));
+    Vt = np.vstack((onesColumn,Vt)) # ubica elementos en la parte inferior - en este caso ubica filas-
+    #plt.matshow(V_t)
+    return Vt
+
+# In[ ]:
+
+
+#Cálculo promedio, matriz de covarianzas de los precios de cierre de cada acción
 
 def Av(X):                      
     Av=np.zeros(X.shape[0])           
@@ -54,13 +73,6 @@ def Av(X):
     for i in range(X.shape[0]):
         Av[i]= st.mean(X[i,:])        #Cálculo de la media 
     return Av
-
-def Dst(X):                      
-    DS=np.zeros(X.shape[0])           
-    
-    for i in range(X.shape[0]):
-        DS[i]= st.stdev(X[i,:])       #Cálculo de Desviación Estándar
-    return DS
 
 def cov(a, b):
     if len(a) != len(b):
@@ -82,57 +94,6 @@ def Mcov(M):
         for j in range(M.shape[0]):
             C[i][j] = cov(M[i,:],M[j,:])                            #Matriz de covarianza
     return(C)
-
-# In[ ]:
-
-
-def miniz(M):                                        #Función objetivo a minimizar
-    w=np.zeros(M.shape[0])
-    S=0
-    for i in range(w.size):
-        for j in range(w.size):
-            S+=M[i][j]*w[i]*w[j]
-    return S*(1/2)
-
-def constraint1(Pc,r):                              #restricción 1
-    U=np.ones(Pc.shape[0])
-    w=np.zeros(Pc.shape[0])
-    S= 0
-    for i in range(w.size):
-        S+=r - Av[i]*w[i]        
-    return S
-
-def constraint2(Pc):                                #restricción 2
-    w=np.zeros(Pc.shape[0])
-    S= 0
-    for i in range(w.size):
-        S+= 1 - w[i]
-    return S
-
-def constraint3(Pc):                                #restricción 3
-    w=np.zeros(Pc.shape[0])    
-    for i in range(w.size):
-        w[i]>=0        
-    return w
-
-
-#valores iniciales
-r = 0.02
-w0=np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
-
-miniz(Mcov(LecYSel(path)))
-Av(LecYSel(path))
-
-# Optimización
-b = (0.0,1.0)
-bnds = (b, b, b, b, b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b)
-con1 = {'type': 'eq', 'fun': constraint1} 
-con2 = {'type': 'eq', 'fun': constraint2}
-con3 = {'type': 'ineq', 'fun': constraint3} 
-cons = ([con1,con2,con3])
-solution = minimize(miniz,w0,method='BFGS',bounds=bnds,constraints=cons)
-x = solution.x
-
 
 
 # In[ ]:
@@ -180,13 +141,37 @@ wmv(LecYSel(path))
 # In[ ]:
 
 
-y_t=Vt[:,0] #Vector de precio relativo
+#Cálculo del portafolio y la tasa de retorno
 
-w_0=np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+w_0=np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])  #Peso inicial según artículo
+P_0=200                                                               #capital inicial a invertir
 
-p_0=200    #capital inicial a invertir
-p_1=p_0*np.matmul(y_t,w_0) #Valor del portafolio en el periodo 1
-rho_1=p_1/p_0 -1     #Tasa de retorno
-print(rho_1)
-r_1=np.log(p_1/p_0)   #Tasa de retorno logarítmica
-print(r_1)
+def Valorport(Vt,w,P_0):
+   # P_(-1)=P_0
+    w=w_0
+    for i in range(Vt.shape[1]):
+        P_i=P_(i-1)*np.matmul(Vt[:,i],w)     #Valor del portafolio en el periodo i
+        if flagFirst==0:
+            flagFirst = 1
+            Pf= P_i
+        else:
+            Pf = np.vstack((Pf,P_i)) 
+        print(Pf)    
+        
+        rho_i=P_i/P_(i-1) -1                #Tasa de retorno en t=i
+        if flagFirst==0:
+            flagFirst = 1
+            rhof= rho_i
+        else:
+            rhof = np.vstack((rhof,rho_i))  
+        print(rhof)     
+        
+        r_i=np.log(P_i/P_(i-1))                     #Tasa de retorno logarítmica
+        if flagFirst==0:
+            flagFirst = 1
+            rf= r_i
+        else:
+            rf = np.vstack((rf,r_i))        
+        print(rf)     
+        w=wmv(Pc)
+    return Pf,rhof,rf
