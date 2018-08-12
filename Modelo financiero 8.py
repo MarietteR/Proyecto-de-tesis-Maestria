@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import quandl as qd
-from scipy.optimize import minimize
 import statistics as st
 
 
