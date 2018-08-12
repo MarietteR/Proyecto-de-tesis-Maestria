@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import statistics as st
+from scipy.optimize import minimize
 
 # In[ ]:
 
@@ -85,50 +86,53 @@ def Mcov(M):
 # In[ ]:
 
 
-from scipy.optimize import minimize
-
-#valores iniciales
-r = 0
-w0=np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
-
-def miniz(M,Pc):
+def miniz(M):                                        #Función objetivo a minimizar
     w=np.zeros(M.shape[0])
+    S=0
     for i in range(w.size):
         for j in range(w.size):
-            S=(1/2)*sum(sum(M[i][j]*w[i]*w[j]))
-    return S
+            S+=M[i][j]*w[i]*w[j]
+    return S*(1/2)
 
-def constraint1(Pc,r):
+def constraint1(Pc,r):                              #restricción 1
     U=np.ones(Pc.shape[0])
     w=np.zeros(Pc.shape[0])
-    sum_= r
+    S= 0
     for i in range(w.size):
-        sum_=sum_ - Av[i]*w[i]        
-    return sum_
+        S+=r - Av[i]*w[i]        
+    return S
 
-def constraint2(Pc):
+def constraint2(Pc):                                #restricción 2
     w=np.zeros(Pc.shape[0])
-    Sum_= 1
+    S= 0
     for i in range(w.size):
-        Sum_= Sum_ - w[i]        
-    return Sum_
+        S+= 1 - w[i]
+    return S
 
-def constraint3(Pc):
+def constraint3(Pc):                                #restricción 3
     w=np.zeros(Pc.shape[0])    
     for i in range(w.size):
         w[i]>=0        
     return w
 
+
+#valores iniciales
+r = 0.02
+w0=np.array([1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+
+miniz(Mcov(LecYSel(path)))
+Av(LecYSel(path))
+
 # Optimización
-b = (0,1)
+b = (0.0,1.0)
 bnds = (b, b, b, b, b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b,b)
 con1 = {'type': 'eq', 'fun': constraint1} 
 con2 = {'type': 'eq', 'fun': constraint2}
 con3 = {'type': 'ineq', 'fun': constraint3} 
 cons = ([con1,con2,con3])
-solution = minimize(miniz,w0,method='SLSQP',\
-                    bounds=bnds,constraints=cons)
+solution = minimize(miniz,w0,method='BFGS',bounds=bnds,constraints=cons)
 x = solution.x
+
 
 
 # In[ ]:
