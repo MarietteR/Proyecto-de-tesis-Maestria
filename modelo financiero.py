@@ -15,7 +15,7 @@ from scipy.optimize import minimize
 # In[ ]:
 
 
-path ='/media/anmrodriguezsa/DA4E639F4E6372E5/Users/Ángela/Desktop/Proyecto1/acciones'  ##Linux
+path ='/media/anmrodriguezsa/Datos/Dropbox/Universidad/Maestría en Actuaría y finanzas/Proyecto investigación Maestría/Python/acciones'  ##Linux
 #path ='C:/Users/Ángela/Desktop/Proyecto1/acciones'   #windows
 
 # In[ ]:
@@ -25,26 +25,51 @@ path ='/media/anmrodriguezsa/DA4E639F4E6372E5/Users/Ángela/Desktop/Proyecto1/ac
 
 def LecYSel(path):
     allFiles = glob.glob(path + "/*.csv")
+    flagFirst = 0
+    
+    def Data(k):
+        Data=np.asarray([])
+        Data= pd.read_csv(k,index_col=None, header=0)  #Lectura de archivos .csv
+        return(Data)
+        
+    for k in allFiles:
+        Data_(k)=np.asarray([])
+        Data(k)
+        print(Data(k))
+        Data_(k)=Data(k).convert_objects(convert_numeric=True).dtypes
+        while Data_(k).shape[0]!=Data_(k+1).shape[0]:
+            for i in range(Data(k).shape[0]):
+                if Data(k)[i][0]!=Data(k+1)[i][0]:
+                    Data(k+1)[i][0]=np.insert(Data(k+1), i, np.array((Data(k)[i][0], Data(k+1)[i][1],Data(k+1)[i][2], Data(k+1)[i][3], Data(k+1)[i][4], Data(k+1)[i][5],Data(k+1)[i][5])), 0)     
+        return()
+LecYSel(path)
+
+# In[ ]:
+
+# Lectura de archivos .csv y Selección de los precios de cierre de cada acción.
+
+def LecYSel(path):
+    allFiles = glob.glob(path + "/*.csv")
     Pc=np.asarray([])
     flagFirst = 0
         
-    for file_ in allFiles:
-        Data = pd.read_csv(file_,index_col=None, header=0)  #Lectura de archivos .csv
+    for k in allFiles:
+        Data = pd.read_csv(k,index_col=None, header=0)  #Lectura de archivos .csv           
         x  = Data["Último"].values   #Selección de los valores del precio de cierre de las acciones
         x = [s. replace('.','') for s in x] 
         x = [s. replace(',','.') for s in x]
         v = [float(s) for s in x] 
-        closingPrice = np.flipud(v)
         
         if flagFirst==0:
             flagFirst = 1
-            Pc = closingPrice
+            Pc = v
         else:
-            Pc = np.vstack((Pc,closingPrice)) #"transpone"
+            Pc = np.vstack((Pc,v)) #"pega"
     return(Pc)
 
-# In[ ]:
+LecYSel(path)
 
+# In[ ]:
 
 #Cálculo precios relativos
 
