@@ -6,11 +6,12 @@
 
 #Librerias
 import glob
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import statistics as st
+import numpy as np
+import pandas as pd
+import quandl as qd
 from scipy.optimize import minimize
+import statistics as st
 
 # In[ ]:
 
@@ -21,55 +22,73 @@ path ='/media/anmrodriguezsa/Datos/Dropbox/Universidad/Maestría en Actuaría y 
 # In[ ]:
 
 
-# Lectura de archivos .csv y Selección de los precios de cierre de cada acción.
+#DEfinición matriz de precios de cierre de las acciones
 
-def LecYSel(path):
+def Lec(path):           #Lectura de archivos .csv
     allFiles = glob.glob(path + "/*.csv")
-    flagFirst = 0
-    
-    def Data(k):
-        Data=np.asarray([])
-        Data= pd.read_csv(k,index_col=None, header=0)  #Lectura de archivos .csv
-        return(Data)
+    Data = []
+            
+    for file_ in allFiles:
+        Data.append(pd.read_csv(file_,index_col=None, header=0))
+    return(Data)
+
+#Lec(path)
+#print(Lec(path))
+
+def ArcM(Data):   #identifica el archivo con más filas
+    filas=[]
+    for i in range(len(Data)):
+        filas.append(Data[i].shape[0])
+    IndArchMax = filas.index(max(filas))
+    return(IndArchMax)
+
+
+def Sizequal(Data):        #Compara tamaños de archivos y los vuelve de igual tamaño
+    for j in range(len(Data)):
+        dif = Data[ArcM(Lec(path))].shape[0] - Data[j].shape[0]
         
-    for k in allFiles:
-        Data_(k)=np.asarray([])
-        Data(k)
-        print(Data(k))
-        Data_(k)=Data(k).convert_objects(convert_numeric=True).dtypes
-        while Data_(k).shape[0]!=Data_(k+1).shape[0]:
-            for i in range(Data(k).shape[0]):
-                if Data(k)[i][0]!=Data(k+1)[i][0]:
-                    Data(k+1)[i][0]=np.insert(Data(k+1), i, np.array((Data(k)[i][0], Data(k+1)[i][1],Data(k+1)[i][2], Data(k+1)[i][3], Data(k+1)[i][4], Data(k+1)[i][5],Data(k+1)[i][5])), 0)     
-        return()
-LecYSel(path)
+        if dif != 0:
+            Data[j] = Data[j].append([Data[ArcM(Lec(path))].iloc[:dif,:]]).reset_index(drop=True)
+    return(Data)
 
-# In[ ]:
+#Sizequal(Lec(path))
+#print(Sizequal(Lec(path)))
 
-# Lectura de archivos .csv y Selección de los precios de cierre de cada acción.
+def CompleT(Data):        #Completa cada dataFrame con la información adecuada
+    for j in range(len(Data)):
+        for i in range(Data[ArcM(Lec(path))].shape[0]):
+            if Data[ArcM(Lec(path))].iloc[i, 0]!=Data[j].iloc[i, 0]:
+                row=pd.DataFrame([[Data[ArcM(Lec(path))].iloc[i, 0], Data[j].iloc[i-1, 1],Data[j].iloc[i-1, 2],Data[j].iloc[i-1, 3], Data[j].iloc[i-1, 4],Data[j].iloc[i-1, 5],Data[j].iloc[i-1, 6]]], columns=['Fecha', 'Último', 'Apertura', 'Máximo', 'Mínimo', 'Vol.', '% var.'])
+                Data[j] = pd.concat([Data[j].iloc[:i,:], row, Data[j].iloc[i:,:]]).reset_index(drop=True)
+                Data[j]=Data[j].drop(Data[j].index[Data[ArcM(Lec(path))].shape[0]])
+        
+    return(Data)
 
-def LecYSel(path):
-    allFiles = glob.glob(path + "/*.csv")
+#CompleT(Sizequal(Lec(path)))
+#print(CompleT(Sizequal(Lec(path)))) 
+
+def Sel(Data):         #Selección de los valores del precio de cierre de las acciones
     Pc=np.asarray([])
     flagFirst = 0
         
-    for k in allFiles:
-        Data = pd.read_csv(k,index_col=None, header=0)  #Lectura de archivos .csv           
-        x  = Data["Último"].values   #Selección de los valores del precio de cierre de las acciones
-        x = [s. replace('.','') for s in x] 
-        x = [s. replace(',','.') for s in x]
-        v = [float(s) for s in x] 
+    for k in range(len(Data)):
+        CloPrice  = Data[k].iloc[:,1].values    
+        CloPrice = [s. replace('.','') for s in CloPrice] 
+        CloPrice = [s. replace(',','.') for s in CloPrice]
+        v = [float(s) for s in CloPrice] 
         
         if flagFirst==0:
             flagFirst = 1
             Pc = v
         else:
-            Pc = np.vstack((Pc,v)) #"pega"
+            Pc = np.vstack((Pc,v)) #"pega verticalmente"
     return(Pc)
 
-LecYSel(path)
+Sel(CompleT(Sizequal(Lec(path))))
+print(Sel(CompleT(Sizequal(Lec(path)))))
 
 # In[ ]:
+
 
 #Cálculo precios relativos
 
