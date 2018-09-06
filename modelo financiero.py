@@ -9,9 +9,8 @@ import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import quandl as qd
-from scipy.optimize import minimize
 import statistics as st
+from cvxopt import matrix, solvers
 
 # In[ ]:
 
@@ -22,9 +21,9 @@ path ='/media/anmrodriguezsa/Datos/Dropbox/Universidad/Maestría en Actuaría y 
 # In[ ]:
 
 
-#DEfinición matriz de precios de cierre de las acciones
+#Definición matriz de precios de cierre de las acciones
 
-def Lec(path):           #Lectura de archivos .csv
+def Lec(path):                                                    #Lectura de archivos .csv
     allFiles = glob.glob(path + "/*.csv")
     Data = []
             
@@ -32,10 +31,8 @@ def Lec(path):           #Lectura de archivos .csv
         Data.append(pd.read_csv(file_,index_col=None, header=0))
     return(Data)
 
-#Lec(path)
-#print(Lec(path))
 
-def ArcM(Data):   #identifica el archivo con más filas
+def ArcM(Data):                                                  #identifica el archivo con más filas
     filas=[]
     for i in range(len(Data)):
         filas.append(Data[i].shape[0])
@@ -43,7 +40,7 @@ def ArcM(Data):   #identifica el archivo con más filas
     return(IndArchMax)
 
 
-def Sizequal(Data):        #Compara tamaños de archivos y los vuelve de igual tamaño
+def Sizequal(Data):                                             #Compara tamaños de archivos y los vuelve de igual tamaño
     for j in range(len(Data)):
         dif = Data[ArcM(Lec(path))].shape[0] - Data[j].shape[0]
         
@@ -51,10 +48,8 @@ def Sizequal(Data):        #Compara tamaños de archivos y los vuelve de igual t
             Data[j] = Data[j].append([Data[ArcM(Lec(path))].iloc[:dif,:]]).reset_index(drop=True)
     return(Data)
 
-#Sizequal(Lec(path))
-#print(Sizequal(Lec(path)))
 
-def CompleT(Data):        #Completa cada dataFrame con la información adecuada
+def CompleT(Data):                                              #Completa cada dataFrame con la información adecuada
     for j in range(len(Data)):
         for i in range(Data[ArcM(Lec(path))].shape[0]):
             if Data[ArcM(Lec(path))].iloc[i, 0]!=Data[j].iloc[i, 0]:
@@ -63,11 +58,9 @@ def CompleT(Data):        #Completa cada dataFrame con la información adecuada
                 Data[j]=Data[j].drop(Data[j].index[Data[ArcM(Lec(path))].shape[0]])
         
     return(Data)
+ 
 
-#CompleT(Sizequal(Lec(path)))
-#print(CompleT(Sizequal(Lec(path)))) 
-
-def Sel(Data):         #Selección de los valores del precio de cierre de las acciones
+def Sel(Data):                                                 #Matriz de los precios de cierre de las acciones
     Pc=np.asarray([])
     flagFirst = 0
         
@@ -84,8 +77,12 @@ def Sel(Data):         #Selección de los valores del precio de cierre de las ac
             Pc = np.vstack((Pc,v)) #"pega verticalmente"
     return(Pc)
 
-Sel(CompleT(Sizequal(Lec(path))))
-print(Sel(CompleT(Sizequal(Lec(path)))))
+Closing_Price=Sel(CompleT(Sizequal(Lec(path))))
+CP_Save=Closing_Price[:]
+
+#print(A)
+print(CP_Save)
+print(type(CP_Save))
 
 # In[ ]:
 
@@ -109,7 +106,7 @@ def retorn(M):
 # In[ ]:
 
 
-#Cálculo promedio, matriz de covarianzas de los precios de cierre de cada acción
+#Cálculo promedio, desviación estándar, matriz de covarianzas de los precios de cierre de cada acción
 
 def Av(X):                      
     Av=np.zeros(X.shape[0])           
@@ -138,6 +135,30 @@ def Mcov(M):
         for j in range(M.shape[0]):
             C[i][j] = cov(M[i,:],M[j,:])                            #Matriz de covarianza
     return(C)
+
+print(Av(CP_Save))
+
+
+# In[ ]:
+
+#Función de optimización Modelo de Markowitz con restricción de pesos no negativos.
+
+P = matrix(Mcov(CP_Save))                                      #Matriz de vaianzas y covarianzas Dim(26X26)
+q = matrix(np.zeros((CP_Save.shape[0],1)))  #matriz de ceros Dim(26X26)
+A = matrix(Av(CP_Save)+np.ones((1,Mcov(CP_Save).shape[0]))) #Retornos esperados (promedio de precios de cierre) y Vector de unos Dim(26X1)
+G = matrix(-np.identity(Mcov(CP_Save).shape[0]))                #Matriz identidad negativa Dim(26)
+h = matrix(np.zeros((CP_Save.shape[0],1)))               #Vector de ceros Dim(26,1)
+b = matrix(1.01)
+
+sol=solvers.qp(P, q, G, h, A, b)
+print(sol['x'])
+
+#print(sol.keys())
+#print(sol['x'])
+np.save('w.npy',sol['x'])
+W_QPMkz=np.load('w.npy')
+print(W_QPMkz)
+print(np.sum(W_QPMkz))
 
 
 # In[ ]:
