@@ -9,30 +9,32 @@ import glob
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import statistics as st
 from cvxopt import matrix, solvers
+#from StringIO import StringIO
 
 # In[ ]:
 
 
-path ='/media/anmrodriguezsa/Datos/Dropbox/Universidad/Maestría en Actuaría y finanzas/Proyecto investigación Maestría/Python/acciones'  ##Linux
-#path ='C:/Users/Ángela/Desktop/Proyecto1/acciones'   #windows
-
+path ='/media/anmrodriguezsa/Datos/Dropbox/Universidad/Maestría en Actuaría y finanzas/Proyecto investigación Maestría/Python/acciones'
 # In[ ]:
 
 
-#Definición matriz de precios de cierre de las acciones
+#################################################
+#  Matriz de precios de cierre de las acciones  #
+#################################################
 
-def Lec(path):                                                    #Lectura de archivos .csv
+def Lec(path):                                                                                   #Lectura de archivos .csv
     allFiles = glob.glob(path + "/*.csv")
     Data = []
+    Completname = []
             
     for file_ in allFiles:
-        Data.append(pd.read_csv(file_,index_col=None, header=0))
+        Data.append(pd.read_csv(file_,index_col=None, header=0)) #skiprows=[int(0.3*len(file_))] selecciona el subconjunto de datos de entrenamiento
+        #Completname= Completname.append(Completname,raw_input(file_))
     return(Data)
+    
 
-
-def ArcM(Data):                                                  #identifica el archivo con más filas
+def ArcM(Data):                                                                                  #identifica el archivo con más filas
     filas=[]
     for i in range(len(Data)):
         filas.append(Data[i].shape[0])
@@ -40,7 +42,7 @@ def ArcM(Data):                                                  #identifica el 
     return(IndArchMax)
 
 
-def Sizequal(Data):                                             #Compara tamaños de archivos y los vuelve de igual tamaño
+def Sizequal(Data):                                                                             #Compara tamaños de archivos y los vuelve de igual tamaño
     for j in range(len(Data)):
         dif = Data[ArcM(Lec(path))].shape[0] - Data[j].shape[0]
         
@@ -49,7 +51,7 @@ def Sizequal(Data):                                             #Compara tamaño
     return(Data)
 
 
-def CompleT(Data):                                              #Completa cada dataFrame con la información adecuada
+def CompleT(Data):                                                                             #Completa cada dataFrame con la información adecuada
     for j in range(len(Data)):
         for i in range(Data[ArcM(Lec(path))].shape[0]):
             if Data[ArcM(Lec(path))].iloc[i, 0]!=Data[j].iloc[i, 0]:
@@ -60,7 +62,7 @@ def CompleT(Data):                                              #Completa cada d
     return(Data)
  
 
-def Sel(Data):                                                 #Matriz de los precios de cierre de las acciones
+def Sel(Data):                                                                                #Matriz de los precios de cierre de las acciones
     Pc=np.asarray([])
     flagFirst = 0
         
@@ -78,11 +80,8 @@ def Sel(Data):                                                 #Matriz de los pr
     return(Pc)
 
 Closing_Price=Sel(CompleT(Sizequal(Lec(path))))
-CP_Save=Closing_Price[:]
-
-#print(A)
-print(CP_Save)
-print(type(CP_Save))
+#print(Closing_Price)
+#print(np.shape(Closing_Price))
 
 # In[ ]:
 
@@ -106,102 +105,48 @@ def retorn(M):
 # In[ ]:
 
 
-#Cálculo promedio, desviación estándar, matriz de covarianzas de los precios de cierre de cada acción
+#Cálculo promedio, matriz de covarianzas de los precios de cierre de cada acción
 
-def Av(X):                      
-    Av=np.zeros(X.shape[0])           
-    
-    for i in range(X.shape[0]):
-        Av[i]= st.mean(X[i,:])        #Cálculo de la media 
-    return Av
-
-def cov(a, b):
-    if len(a) != len(b):
-        return
-
-    a_mean = np.mean(a)
-    b_mean = np.mean(b)
-    sum = 0
-
-    for i in range(0, len(a)):
-        sum += ((a[i] - a_mean) * (b[i] - b_mean))     #Cálculo covarianza entre dos vectores
-    return sum/(len(a)-1)
-
-
-def Mcov(M):
-    C=np.zeros((M.shape[0],M.shape[0]))
- 
-    for i in range(M.shape[0]):
-        for j in range(M.shape[0]):
-            C[i][j] = cov(M[i,:],M[j,:])                            #Matriz de covarianza
-    return(C)
-
-print(Av(CP_Save))
-
+Me = np.mean(Closing_Price, axis = 1)
+Va = np.var(Closing_Price[0,:], ddof = 1) # ddof es para que divida sobre (N - ddof)
+Co = np.cov(Closing_Price)
 
 # In[ ]:
 
-#Función de optimización Modelo de Markowitz con restricción de pesos no negativos.
 
-P = matrix(Mcov(CP_Save))                                      #Matriz de vaianzas y covarianzas Dim(26X26)
-q = matrix(np.zeros((CP_Save.shape[0],1)))  #matriz de ceros Dim(26X26)
-A = matrix(Av(CP_Save)+np.ones((1,Mcov(CP_Save).shape[0]))) #Retornos esperados (promedio de precios de cierre) y Vector de unos Dim(26X1)
-G = matrix(-np.identity(Mcov(CP_Save).shape[0]))                #Matriz identidad negativa Dim(26)
-h = matrix(np.zeros((CP_Save.shape[0],1)))               #Vector de ceros Dim(26,1)
-b = matrix(1.01)
+#Cálculo promedio, matriz de covarianzas de los precios de cierre de cada acción
 
-sol=solvers.qp(P, q, G, h, A, b)
-print(sol['x'])
-
-#print(sol.keys())
-#print(sol['x'])
-np.save('w.npy',sol['x'])
-W_QPMkz=np.load('w.npy')
-print(W_QPMkz)
-print(np.sum(W_QPMkz))
+Me = np.mean(Closing_Price, axis = 1)
+Va = np.var(Closing_Price[0,:], ddof = 1) # ddof es para que divida sobre (N - ddof)
+Co = np.cov(Closing_Price)
 
 
 # In[ ]:
 
 
-#Simulación del cálculo de los pesos con el módelo clásico de Markowitz
+#Solución analítica del cálculo de los pesos con el módelo clásico de Markowitz
 
-def  wM(rf,Pc):
-    M= Mcov(Pc)
-    U= np.ones(Pc.shape[0])
-    A=np.matmul(np.transpose(U),np.linalg.inv(M),Av(Pc))
-    B=np.matmul(np.transpose(U),np.linalg.inv(M),U)
-    C=np.matmul(np.transpose(Av(Pc)),np.linalg.inv(M),Av(Pc))
+from numpy import ndarray
+
+def  wMa(rf,Pc):
+    U= np.ones((Co.shape[0],1))
+    E=np.transpose(np.array([Me]))
+    A=np.matmul(np.transpose(U),np.matmul(np.linalg.inv(Co),E))
+    B=np.matmul(np.transpose(E),np.matmul(np.linalg.inv(Co),E))
+    C=np.matmul(np.transpose(U),np.matmul(np.linalg.inv(Co),U))
     D=B*C-A**2
-    g=(1/D)*(B*np.matmul(np.linalg.inv(M),U)-A*np.matmul(np.linalg.inv(M),Av(Pc)))
-    h=(1/D)*(C*np.matmul(np.linalg.inv(M),Av(Pc))-A*np.matmul(np.linalg.inv(M),U))
+    g=(1/D)*(B*np.matmul(np.linalg.inv(Co),U)-A*np.matmul(np.linalg.inv(Co),E))
+    h=(1/D)*(C*np.matmul(np.linalg.inv(Co),E)-A*np.matmul(np.linalg.inv(Co),U))
     w=g+h*rf
-    
-    wN=np.zeros(len(w))
-    wS=np.sum(abs(w))
-    for i in range(len(w)):        
-        wN[i]=abs(w[i])/wS
-    
-    return w,wN
+    return w
 
-#wM(0,LecYSel(path))
+print(wMa(0.01,Closing_Price))
+print(np.sum(np.array([wMa(0.01,Closing_Price)])))
 
-#Simulación del cálculo de los pesos con el módelo mínima varianza
-
-def  wmv(Pc):
-    M= Mcov(Pc)
-    U= np.ones(Pc.shape[0])
-    C=np.matmul(np.transpose(Av(Pc)),np.linalg.inv(M),Av(Pc))
-    w=(1/C)*np.matmul(np.linalg.inv(M),U)
-    
-    wN=np.zeros(len(w))
-    wS=np.sum(abs(w))
-    for i in range(len(w)):        
-        wN[i]=abs(w[i])/wS
-    
-    return w,wN
-
-wmv(LecYSel(path))
+#plt.plot([1,2,3,4], [1,4,9,16], 'ro')
+#plt.axis([0, 6, 0, 20])
+#plt.title(i[:-4] + str(len(Vt)))
+#plt.show()
 
 # In[ ]:
 
