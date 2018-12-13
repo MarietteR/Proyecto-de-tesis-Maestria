@@ -11,7 +11,6 @@ import numpy as np
 
 # In[6]:
 
-
 # Insertar matriz R
 
 R = np.matrix([ [-1,-1,-1,-1,0,-1],
@@ -29,7 +28,7 @@ R = np.matrix([ [-1,-1,-1,-1,0,-1],
 
 
 # Q matrix
-Q = np.matrix(np.zeros([6,6]))
+Q = np.matrix(np.zeros([R.shape[0],R.shape[1]]))
 
 # Gamma (learning parameter).
 gamma = 0.8
